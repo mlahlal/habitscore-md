@@ -1,4 +1,4 @@
-    use std::fs;
+use std::fs;
 
 fn main() {
     let contents = fs::read_to_string("/path/to/file")
@@ -7,12 +7,14 @@ fn main() {
     let mut lines = vec![];
     let mut day = String::new();
     let mut tasks: bool = false;
-    let mut points = 0;
+    let mut points: i32 = 0;
+    let lvl;
 
     for line in &contents {
         let tmp: String = line.to_string();
 
         if tasks && tmp.chars().count() >= 2 && &tmp[..3] == "- [" {
+            let tmp_pt = points;
             match &tmp[6..7] {
                 "H" => {
                     points = points + ( if &tmp[3..4] == "X" {10} else {-15} );
@@ -25,15 +27,17 @@ fn main() {
                 },
                 _ => println!("Stop The Cap"),
             }
+            if tmp_pt < points { String::clear(&mut day); }
             continue;
         } else {
+            if day.len() > 0 && tasks { points = points - 10; }
             tasks = false;
         }
 
-        // Soluzione non funzionante, RIVEDERE
-        if tmp.chars().count() >= 6 && &tmp[..7] == "Punti:" {
-            let tmp_pt = tmp.chars().skip_while(|c| !c.is_digit(10)).collect::<String>();
-            points = points + i32::from_str_radix(&tmp_pt[0..1], 10);
+        if tmp.chars().count() >= 6 && &tmp[..6] == "Punti:" {
+            let tmp_pt = tmp.chars().skip_while(|c| !c.is_digit(10) && *c != '-').collect::<String>();
+            let tmp_pt = tmp_pt.parse::<i32>().unwrap();
+            points = points + tmp_pt;
         }
 
         if tmp.chars().count() >= 4 && &tmp[0..4] == "####" {
@@ -44,5 +48,8 @@ fn main() {
         lines.push(format!("..{}..", tmp));
     }
 
-    println!("{}", points);
+    if points < 0 { lvl = -1; }
+    else { lvl = points/1000; }
+
+    println!("points => {} \nlevel => {}", points, lvl);
 }
