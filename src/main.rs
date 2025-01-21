@@ -1,7 +1,15 @@
 use std::fs;
+use std::env;
 
 fn main() {
-    let contents = fs::read_to_string("/home/mouad/Documents/notes/personal/lifeprogress.md")
+    let args: Vec<String> = env::args().collect();
+    let filepath = &args[1];
+
+    if filepath.len() <= 0 {
+        return;
+    }
+
+    let contents = fs::read_to_string(filepath)
         .expect("Should have been able to read the file");
     let contents: Vec<&str> = contents.split('\n').collect();
     let mut lines = vec![];

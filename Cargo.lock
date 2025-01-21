@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "lifeprogressmd-rust"
+name = "habitscore-md"
 version = "0.1.0"
