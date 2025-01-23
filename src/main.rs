@@ -1,11 +1,36 @@
-use std::fs;
-use std::env;
+use std::{fs, path::Path};
+use gumdrop::Options;
+
+#[derive(Debug, Options)]
+struct MyOptions {
+    #[options(free)]
+    free: Vec<String>,
+
+    #[options(help = "print help message")]
+    help: bool,
+
+    #[options(help = "show the tasks not done many times")]
+    stat: bool,
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let filepath = &args[1];
+    let opts = MyOptions::parse_args_default_or_exit();
 
-    if filepath.len() <= 0 {
+    if opts.free.len() > 1 {
+        println!("Only one path is accepted");
+        return;
+    }
+
+    if opts.free.len() <1 {
+        println!("Path not provided");
+        return;
+    }
+
+    let filepath = &opts.free[0];
+    let stat = opts.stat;
+
+    if !Path::new(filepath).exists() {
+        println!("Invalid path");
         return;
     }
 
@@ -13,6 +38,7 @@ fn main() {
         .expect("Should have been able to read the file");
     let contents: Vec<&str> = contents.split('\n').collect();
     let mut lines = vec![];
+    let mut not_done: Vec<&str> = Vec::new();
     let mut day = "";
     let mut tasks: bool = false;
     let mut points: i32 = 0;
@@ -25,6 +51,8 @@ fn main() {
             let tmp_pt = points;
             let done = &tmp[3..4];
             let priority = &tmp[6..7];
+
+            if stat && done == " " { not_done.push(&tmp[10..]); }
 
             points += match (done, priority) {
                 ("X", "H") => 10,
@@ -65,4 +93,35 @@ fn main() {
     else { lvl = points/1000; }
 
     println!("points => {} \nlevel => {}", points, lvl);
+
+    if stat {
+        not_done.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+
+        struct NotDoneTask<'a> {
+            task: &'a str,
+            count: i32,
+        }
+
+        let mut stats: Vec<NotDoneTask> = Vec::new();
+
+        for el in &not_done {
+            let mut count = 0;
+            for le in &not_done {
+                if le == el { count += 1; }
+            }
+            if !stats.iter().any(|i| i.task == *el) {
+                stats.push(NotDoneTask { task: el, count });
+            } else {
+                let index = stats.iter().position(|r| r.task == *el).unwrap();
+                stats[index].count = count;
+            }
+        }
+
+        println!("\n\nTask not done many times (>2)\n");
+        for el in &stats {
+            if el.count >= 2 {
+                println!("Task: {} \nCount: {}\n", el.task, el.count);
+            }
+        }
+    }
 }
