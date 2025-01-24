@@ -1,40 +1,20 @@
-use std::{fs, path::Path};
-use gumdrop::Options;
+use cli::parse_args;
+use std::fs;
+use std::process::exit;
 
-#[derive(Debug, Options)]
-struct MyOptions {
-    #[options(free)]
-    free: Vec<String>,
+mod cli;
+mod errors;
 
-    #[options(help = "print help message")]
-    help: bool,
+fn main() -> std::io::Result<()> {
+    let opts = match parse_args() {
+        Ok(args) => args,
+        Err(e) => {
+            log::error!("Error while parsing arguments: \n\t{}", e);
+            exit(e.get_retcode());
+        }
+    };
 
-    #[options(help = "show the tasks not done many times")]
-    stat: bool,
-}
-
-fn main() {
-    let opts = MyOptions::parse_args_default_or_exit();
-
-    if opts.free.len() > 1 {
-        println!("Only one path is accepted");
-        return;
-    }
-
-    if opts.free.len() <1 {
-        println!("Path not provided");
-        return;
-    }
-
-    let filepath = &opts.free[0];
-    let stat = opts.stat;
-
-    if !Path::new(filepath).exists() {
-        println!("Invalid path");
-        return;
-    }
-
-    let contents = fs::read_to_string(filepath)
+    let contents = fs::read_to_string(opts.path)
         .expect("Should have been able to read the file");
     let contents: Vec<&str> = contents.split('\n').collect();
     let mut lines = vec![];
@@ -52,7 +32,7 @@ fn main() {
             let done = &tmp[3..4];
             let priority = &tmp[6..7];
 
-            if stat && done == " " { not_done.push(&tmp[10..]); }
+            if opts.stat && done == " " { not_done.push(&tmp[10..]); }
 
             points += match (done, priority) {
                 ("X", "H") => 10,
@@ -94,7 +74,7 @@ fn main() {
 
     println!("points => {} \nlevel => {}", points, lvl);
 
-    if stat {
+    if opts.stat {
         not_done.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
 
         struct NotDoneTask<'a> {
@@ -124,4 +104,6 @@ fn main() {
             }
         }
     }
+
+    Ok(())
 }
