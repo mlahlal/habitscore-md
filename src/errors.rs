@@ -1,10 +1,10 @@
 use std::fmt;
-use std::process::exit;
 
 #[derive(Debug)]
 pub enum Errcode {
     ArgumentInvalid(&'static str),
-    FormatInvalid(u8),
+    FormatInvalid(String),
+    UnknownError(String),
 }
 
 #[allow(unreachable_patterns)]
@@ -12,6 +12,8 @@ impl fmt::Display for Errcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             Errcode::ArgumentInvalid(element) => write!(f, "ArgumentInvalid: {}", element),
+            Errcode::FormatInvalid(element) => write!(f, "FormatInvalid: {}", element),
+            Errcode::UnknownError(element) => write!(f, "UnknownError: {}", element),
             _ => write!(f, "{:?}", self),
         }
     }
@@ -20,17 +22,5 @@ impl fmt::Display for Errcode {
 impl Errcode {
     pub fn get_retcode(&self) -> i32 {
         1
-    }
-}
-
-pub fn exit_with_retcode(res: Result<(), Errcode>) {
-    match res {
-        Ok(_) => {
-            exit(0);
-        },
-        Err(e) => {
-            let retcode = e.get_retcode();
-            exit(retcode);
-        }
     }
 }
