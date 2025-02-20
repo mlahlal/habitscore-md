@@ -1,9 +1,11 @@
 use crate::cli::Args;
 use crate::errors::Errcode;
+use crate::chart::draw_chart;
 
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::collections::HashMap;
 
 pub struct HabitFile {
     path: PathBuf,
@@ -28,8 +30,10 @@ impl HabitFile {
 
         let mut tasks = false;
         let mut not_done: Vec<String> = Vec::new();
+        let mut tasks_per_day = HashMap::new();
         let mut points = 0;
         let mut day = String::new();
+        let mut no_task = false;
         let lvl;
 
         for line in reader.lines() {
@@ -38,7 +42,7 @@ impl HabitFile {
                 Err(e) => return Err(Errcode::UnknownError(e.to_string())),
             };
 
-            match self.analyze(line, &mut tasks, &mut not_done, &mut points, &mut day) {
+            match self.analyze(line, &mut tasks, &mut not_done, &mut points, &mut day, &mut no_task, &mut tasks_per_day) {
                 Ok(_) => (),
                 Err(e) => {
                     log::error!("Error while analizing file: \n\t{}", e);
@@ -82,6 +86,12 @@ impl HabitFile {
             }
         }
 
+        log::debug!("{:?}", tasks_per_day);
+
+        if self.stat {
+            draw_chart(&tasks_per_day)?;
+        }
+
         Ok(())
     }
 
@@ -91,7 +101,9 @@ impl HabitFile {
         tasks: &mut bool,
         not_done: &mut Vec<String>,
         points: &mut i32,
-        day: &mut String
+        day: &mut String,
+        no_task: &mut bool,
+        tasks_per_day: &mut HashMap<String, i32>
     ) -> Result<(), Errcode> {
 
         if *tasks && line.len() >= 2 && &line[..3] == "- [" {
@@ -113,8 +125,11 @@ impl HabitFile {
                 }
             };
 
-            if tmp_pt < *points { day.clear() }
-        } else if !day.is_empty() && *tasks {
+            *tasks_per_day.entry(day.clone().replace("#### ", "")).or_insert(0) += 1;
+            log::debug!("{}", day);
+
+            if tmp_pt < *points { *no_task = false; }
+        } else if *no_task && *tasks {
             *points -= 10;
             *tasks = false;
         }
@@ -129,9 +144,12 @@ impl HabitFile {
 
         if line.starts_with("####") {
             *tasks = true;
+            *no_task = true;
             *day = line.clone();
         }
 
+
         Ok(())
     }
+
 }
