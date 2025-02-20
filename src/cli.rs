@@ -11,7 +11,7 @@ pub struct Args {
     #[options(help = "file path")]
     pub path: PathBuf,
 
-    #[options(help = "show the tasks not done many times")]
+    #[options(help = "show some statistics and export a chart")]
     pub stat: bool,
 
     #[options(help = "debug mode")]
@@ -21,7 +21,9 @@ pub struct Args {
 pub fn parse_args() -> Result<Args, Errcode> {
     let args = Args::parse_args_default_or_exit();
 
-    setup_log(log::LevelFilter::Debug);
+    if args.debug {
+        setup_log(log::LevelFilter::Debug);
+    }
 
     if !args.path.exists() || !args.path.is_file() {
         return Err(Errcode::ArgumentInvalid("path"));

@@ -1,10 +1,11 @@
 use crate::cli::Args;
 use crate::errors::Errcode;
+use crate::chart::draw_chart;
 
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use plotters::prelude::*;
+use std::collections::HashMap;
 
 pub struct HabitFile {
     path: PathBuf,
@@ -29,8 +30,10 @@ impl HabitFile {
 
         let mut tasks = false;
         let mut not_done: Vec<String> = Vec::new();
+        let mut tasks_per_day = HashMap::new();
         let mut points = 0;
         let mut day = String::new();
+        let mut no_task = false;
         let lvl;
 
         for line in reader.lines() {
@@ -39,7 +42,7 @@ impl HabitFile {
                 Err(e) => return Err(Errcode::UnknownError(e.to_string())),
             };
 
-            match self.analyze(line, &mut tasks, &mut not_done, &mut points, &mut day) {
+            match self.analyze(line, &mut tasks, &mut not_done, &mut points, &mut day, &mut no_task, &mut tasks_per_day) {
                 Ok(_) => (),
                 Err(e) => {
                     log::error!("Error while analizing file: \n\t{}", e);
@@ -83,7 +86,11 @@ impl HabitFile {
             }
         }
 
-        self.chart()?;
+        log::debug!("{:?}", tasks_per_day);
+
+        if self.stat {
+            draw_chart(&tasks_per_day)?;
+        }
 
         Ok(())
     }
@@ -94,7 +101,9 @@ impl HabitFile {
         tasks: &mut bool,
         not_done: &mut Vec<String>,
         points: &mut i32,
-        day: &mut String
+        day: &mut String,
+        no_task: &mut bool,
+        tasks_per_day: &mut HashMap<String, i32>
     ) -> Result<(), Errcode> {
 
         if *tasks && line.len() >= 2 && &line[..3] == "- [" {
@@ -116,8 +125,11 @@ impl HabitFile {
                 }
             };
 
-            if tmp_pt < *points { day.clear() }
-        } else if !day.is_empty() && *tasks {
+            *tasks_per_day.entry(day.clone().replace("#### ", "")).or_insert(0) += 1;
+            log::debug!("{}", day);
+
+            if tmp_pt < *points { *no_task = false; }
+        } else if *no_task && *tasks {
             *points -= 10;
             *tasks = false;
         }
@@ -132,73 +144,12 @@ impl HabitFile {
 
         if line.starts_with("####") {
             *tasks = true;
+            *no_task = true;
             *day = line.clone();
         }
 
 
-
         Ok(())
     }
 
-    pub fn chart(&mut self) -> Result<(), Errcode> {
-        const FILE_NAME: &str = "/home/mouad/Documents/dev/habitscore-md/sample.png";
-        let root_area = BitMapBackend::new(FILE_NAME, (1280, 768)).into_drawing_area();
-
-        if let Err(e) = root_area.fill(&WHITE) {
-            return Err(Errcode::UnknownError(e.to_string()));
-        }
-
-        let root_area = match root_area.titled("Image Title", ("sans-serif", 60)) {
-            Ok(x) => x,
-            Err(e) => return Err(Errcode::UnknownError(e.to_string())),
-        };
-
-        let (upper, lower) = root_area.split_vertically(512);
-        let x_axis = (-3.4f32..3.4).step(0.1);
-        let mut cc = match ChartBuilder::on(&upper)
-            .margin(5)
-            .set_all_label_area_size(50)
-            .caption("NxN M3x3 Polinomio Caratteristico", ("sans-serif", 40))
-            .build_cartesian_2d(-3.4f32..3.4, -1.2f32..1.2f32) {
-                Ok(x) => x,
-                Err(e) => return Err(Errcode::UnknownError(e.to_string())),
-        };
-
-        if let Err(e) = cc.configure_mesh()
-            .x_labels(20)
-            .y_labels(10)
-            .disable_mesh()
-            .x_label_formatter(&|v| format!("{:.1}", v))
-            .y_label_formatter(&|v| format!("{:.1}", v))
-            .draw() {
-                return Err(Errcode::UnknownError(e.to_string()));
-        }
-
-        cc.draw_series(LineSeries::new(x_axis.values().map(|x| (x, x.sin())), &RED)).unwrap()
-          .label("Sine")
-          .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], RED));
-
-        if let Err(e) = cc.configure_series_labels().border_style(BLACK).draw() {
-            return Err(Errcode::UnknownError(e.to_string()));
-        }
-
-        cc.draw_series(PointSeries::of_element(
-            (-3.0f32..2.1f32).step(1.0).values().map(|x| (x, x.sin())),
-            5,
-            ShapeStyle::from(&RED).filled(),
-            &|coord, size, style| {
-                EmptyElement::at(coord)
-                    + Circle::new((0, 0), size, style)
-                    + Text::new(format!("{:?}", coord), (0, 15), ("sans-serif", 15))
-            },
-        ));
-
-        // To avoid the IO failure being ignored silently, we manually call the present function
-        root_area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
-        println!("Result has been saved to {}", FILE_NAME);
-
-
-
-        Ok(())
-    }
 }

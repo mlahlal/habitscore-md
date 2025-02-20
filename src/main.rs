@@ -5,6 +5,7 @@ use file::HabitFile;
 mod cli;
 mod errors;
 mod file;
+mod chart;
 
 fn main() {
     let args = match parse_args() {
