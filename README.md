@@ -22,3 +22,28 @@ cargo build --release
 There are also some flags you can use :
 - -d : Debug mode
 - -s : Generates the chart and prints frequently incomplete tasks
+
+## Integration with [i3status-rust](https://github.com/greshake/i3status-rust)
+
+You can integrate this program with i3status-rust to display your progress on the status bar.
+To do so, add the following to your `config.toml`:
+
+``` toml
+[[block]]
+block = "custom"
+command = "sh /path/to/bash/script"
+watch_files = ["/path/to/md/file"]
+```
+
+Replace `/path/to/bash/script` with the actual path of the following Bash script:
+
+``` bash
+#!/bin/bash
+OUTPUT=$(habitscore-md -p /path/to/md/file)
+NEWOUTPUT="${OUTPUT//$'\n'/ }"
+echo $NEWOUTPUT
+```
+
+Make sure to replace `/path/to/md/file` with the correct path to your Markdown file.
+
+![Screenshot](screenshot.png)
