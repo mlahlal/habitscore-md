@@ -23,7 +23,7 @@ pub fn draw_chart(data: &HashMap<String, i32>) -> Result<(), Errcode> {
             Ok(chart) => chart,
             Err(e) => {
                 log::error!("Error configuring chart builder");
-                return Err(Errcode::UnknownError(e.to_string()));
+                return Err(Errcode::ChartError(e.to_string()));
             }
     };
 
@@ -36,21 +36,21 @@ pub fn draw_chart(data: &HashMap<String, i32>) -> Result<(), Errcode> {
         .y_label_formatter(&|y| y.to_string())
         .draw() {
             log::error!("Error configuring mesh");
-            return Err(Errcode::UnknownError(e.to_string()));
+            return Err(Errcode::ChartError(e.to_string()));
     }
 
     if let Err(e) = chart.draw_series(
         data_points.iter().zip(0..data_points.len()).map(|tuple| Circle::new((tuple.1, tuple.0.1), 2, RED.filled())),
     ) {
         log::error!("Error drawing series");
-        return Err(Errcode::UnknownError(e.to_string()));
+        return Err(Errcode::ChartError(e.to_string()));
     }
 
     if let Err(e) = chart.draw_series(
         LineSeries::new(data_points.iter().zip(0..data_points.len()).map(|tuple| (tuple.1, tuple.0.1)), RED),
     ) {
         log::error!("Error drawing series");
-        return Err(Errcode::UnknownError(e.to_string()));
+        return Err(Errcode::ChartError(e.to_string()));
     }
 
     Ok(())

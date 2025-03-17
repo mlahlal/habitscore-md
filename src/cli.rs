@@ -23,6 +23,8 @@ pub fn parse_args() -> Result<Args, Errcode> {
 
     if args.debug {
         setup_log(log::LevelFilter::Debug);
+    } else {
+        setup_log(log::LevelFilter::Error);
     }
 
     if !args.path.exists() || !args.path.is_file() {

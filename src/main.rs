@@ -11,7 +11,7 @@ fn main() {
     let args = match parse_args() {
         Ok(args) => args,
         Err(e) => {
-            log::error!("Error while parsing arguments: \n\t{}", e);
+            log::error!("{}", e);
             exit(e.get_retcode());
         }
     };
@@ -21,7 +21,7 @@ fn main() {
     match habitfile.read() {
         Ok(_) => (),
         Err(e) => {
-            log::error!("Error in reading file: \n\t{}", e);
+            log::error!("\n{}\n", e);
             exit(e.get_retcode());
         }
     }

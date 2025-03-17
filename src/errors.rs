@@ -4,6 +4,8 @@ use std::fmt;
 pub enum Errcode {
     ArgumentInvalid(&'static str),
     FormatInvalid(String),
+    FileError(String),
+    ChartError(String),
     UnknownError(String),
 }
 
@@ -13,6 +15,8 @@ impl fmt::Display for Errcode {
         match &self {
             Errcode::ArgumentInvalid(element) => write!(f, "ArgumentInvalid: {}", element),
             Errcode::FormatInvalid(element) => write!(f, "FormatInvalid: {}", element),
+            Errcode::FileError(element) => write!(f, "FileError: {}", element),
+            Errcode::ChartError(element) => write!(f, "ChartError: {}", element),
             Errcode::UnknownError(element) => write!(f, "UnknownError: {}", element),
             _ => write!(f, "{:?}", self),
         }
