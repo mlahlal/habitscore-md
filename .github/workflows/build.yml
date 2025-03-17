@@ -30,6 +30,9 @@ jobs:
             
             - name: Install cross
               run: cargo install cross
+
+            - name: Install libfontconfig1-dev
+              run: apt install libfontconfig1-dev
             
             - name: Build with cross
               run: cross build --release --target ${{ matrix.target }}
