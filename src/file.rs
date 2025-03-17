@@ -23,7 +23,7 @@ impl HabitFile {
     pub fn read (&mut self) -> Result<(), Errcode> {
         let file = match File::open(&self.path) {
             Ok(file) => file,
-            Err(e) => return Err(Errcode::UnknownError(e.to_string())),
+            Err(e) => return Err(Errcode::FileError(e.to_string())),
         };
 
         let reader = BufReader::new(file);
@@ -39,7 +39,7 @@ impl HabitFile {
         for line in reader.lines() {
             let line = match line {
                 Ok(line) => line,
-                Err(e) => return Err(Errcode::UnknownError(e.to_string())),
+                Err(e) => return Err(Errcode::FileError(e.to_string())),
             };
 
             match self.analyze(line, &mut tasks, &mut not_done, &mut points, &mut day, &mut no_task, &mut tasks_per_day) {
@@ -86,8 +86,6 @@ impl HabitFile {
             }
         }
 
-        log::debug!("{:?}", tasks_per_day);
-
         if self.stat {
             draw_chart(&tasks_per_day)?;
         }
@@ -126,7 +124,6 @@ impl HabitFile {
             };
 
             *tasks_per_day.entry(day.clone().replace("#### ", "")).or_insert(0) += 1;
-            log::debug!("{}", day);
 
             if tmp_pt < *points { *no_task = false; }
         } else if *no_task && *tasks {
